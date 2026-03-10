@@ -1,0 +1,11 @@
+name = "louis"
+version = "1.0.0"
+edition = "2021"
+description = "Louis - Cloud-Native Video Processing Pipeline"
+repository = "https://github.com/Francois-EF-WebOps/Louis"
+license = "MIT"
+
+[package]
+authors = ["Video Processing Team"]
+
+[dependencies]

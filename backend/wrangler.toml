@@ -1,0 +1,26 @@
+name = "louis-backend"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+[env.production]
+vars = { ENVIRONMENT = "production" }
+
+[env.development]
+vars = { ENVIRONMENT = "development" }
+
+# R2 Storage Configuration (Cloudflare)
+[[r2_buckets]]
+binding = "VIDEO_BUCKET"
+bucket_name = "louis-videos"
+
+# Service Bindings (if using KV for job state)
+[[kv_namespaces]]
+binding = "JOB_STATE"
+id = "your-kv-namespace-id"
+
+# Environment Variables passed through
+[vars]
+GOOGLE_CLOUD_PROJECT_ID = "your-project-id"
+CLOUDINARY_CLOUD_NAME = "your-cloud-name"
+JOB_RETENTION_HOURS = 24
+MAX_VIDEO_SIZE_GB = 10

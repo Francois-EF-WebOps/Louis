@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  # Frontend development server
+  frontend:
+    image: node:18-alpine
+    working_dir: /app/frontend
+    volumes:
+      - .:/app
+    ports:
+      - "5173:5173"
+    command: npm run dev
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8787
+
+  # Backend development server (Cloudflare Workers local)
+  backend:
+    image: node:18-alpine
+    working_dir: /app/backend
+    volumes:
+      - .:/app
+    ports:
+      - "8787:8787"
+    command: npm run dev
+    environment:
+      - ENVIRONMENT=development
+
+  # Mock Google Cloud Video Intelligence API
+  mock-google-api:
+    image: mockserver/mockserver:latest
+    ports:
+      - "4001:1080"
+    environment:
+      MOCKSERVER_INITIALIZATION_JSON_PATH: /config/initializer.json
+    volumes:
+      - ./mock-apis/google-vision.json:/config/initializer.json
+
+  # Mock Cloudinary API
+  mock-cloudinary-api:
+    image: mockserver/mockserver:latest
+    ports:
+      - "4002:1080"
+    environment:
+      MOCKSERVER_INITIALIZATION_JSON_PATH: /config/initializer.json
+    volumes:
+      - ./mock-apis/cloudinary.json:/config/initializer.json
+
+  # Local R2 simulation (MinIO)
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: minio server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # Redis for job queue (optional)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  minio-data:
+
+networks:
+  default:
+    name: louis-network

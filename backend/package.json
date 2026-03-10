@@ -1,0 +1,22 @@
+{
+  "name": "louis-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "wrangler build",
+    "deploy": "wrangler deploy",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@google-cloud/video-intelligence": "^4.1.0",
+    "@google-cloud/storage": "^7.0.0",
+    "cloudinary": "^1.39.0",
+    "replicate": "^0.32.0",
+    "nanoid": "^4.0.2"
+  },
+  "devDependencies": {
+    "wrangler": "^3.50.0",
+    "eslint": "^8.55.0"
+  }
+}
