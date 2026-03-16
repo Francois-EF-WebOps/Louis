@@ -94,12 +94,26 @@ async function handleDownload(jobId, env, ctx) {
       )
     }
 
+    // MOCK MODE FALLBACK:
+    // If no real R2 bucket is configured, return a dummy text file explaining the mock mode
+    if (!env.VIDEO_BUCKET || !jobData.uploadId) {
+      const dummyContent = 'This is a mock download generated in Local Simulation Mode.\n\nIn a real deployment, this would be a ZIP file containing your processed video segments.'
+      return addCorsHeaders(
+        new Response(dummyContent, {
+          headers: {
+            'Content-Type': 'text/plain',
+            'Content-Disposition': `attachment; filename="mock-output-${jobId}.txt"`
+          }
+        })
+      )
+    }
+
     // Get the output file from R2
     const outputKey = jobData.packageInfo?.outputKey || `${jobId}/output.zip`
-    
+
     try {
       const file = await env.VIDEO_BUCKET.get(outputKey)
-      
+
       if (!file) {
         return addCorsHeaders(
           new Response(JSON.stringify({ error: 'Download file not found' }), {
@@ -121,21 +135,15 @@ async function handleDownload(jobId, env, ctx) {
       )
     } catch (r2Error) {
       console.error('R2 download error:', r2Error)
-      
-      // If R2 is not configured, return job data with download info
+
+      // If R2 is not configured, return a dummy file
+      const dummyContent = 'This is a mock download generated in Local Simulation Mode.\n\nIn a real deployment, this would be a ZIP file containing your processed video segments.'
       return addCorsHeaders(
-        new Response(JSON.stringify({
-          downloadReady: true,
-          jobId,
-          message: 'R2 not configured - download implementation requires Cloudflare R2 setup',
-          jobData: {
-            workflow: jobData.workflow,
-            segments: jobData.chunks?.segments || [],
-            packageInfo: jobData.packageInfo
+        new Response(dummyContent, {
+          headers: {
+            'Content-Type': 'text/plain',
+            'Content-Disposition': `attachment; filename="mock-output-${jobId}.txt"`
           }
-        }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' }
         })
       )
     }
