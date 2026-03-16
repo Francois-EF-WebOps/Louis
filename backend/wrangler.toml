@@ -1,26 +1,36 @@
-name = "louis-backend"
+name = "louis-api"
 main = "src/index.js"
 compatibility_date = "2024-01-01"
 
-[env.production]
-vars = { ENVIRONMENT = "production" }
-
+# Development configuration
 [env.development]
-vars = { ENVIRONMENT = "development" }
+vars = { ENVIRONMENT = "development", JOB_RETENTION_HOURS = "24", MAX_VIDEO_SIZE_GB = "10" }
 
-# R2 Storage Configuration (Cloudflare)
+# Production configuration
+[env.production]
+vars = { ENVIRONMENT = "production", JOB_RETENTION_HOURS = "24", MAX_VIDEO_SIZE_GB = "10" }
+
+# R2 Storage Configuration
+# Bucket will be created via Cloudflare Dashboard or Terraform
+# Local dev uses MinIO (docker-compose), production uses Cloudflare R2
 [[r2_buckets]]
 binding = "VIDEO_BUCKET"
 bucket_name = "louis-videos"
 
-# Service Bindings (if using KV for job state)
+# KV Namespace for job state and upload metadata
+# Create via: wrangler kv namespace create "JOB_STATE"
+# Then replace the id below with your actual namespace ID
 [[kv_namespaces]]
 binding = "JOB_STATE"
-id = "your-kv-namespace-id"
+id = "YOUR_KV_NAMESPACE_ID"
+preview_id = "YOUR_PREVIEW_KV_NAMESPACE_ID"
 
-# Environment Variables passed through
+# Environment variables available in all environments
 [vars]
-GOOGLE_CLOUD_PROJECT_ID = "your-project-id"
-CLOUDINARY_CLOUD_NAME = "your-cloud-name"
-JOB_RETENTION_HOURS = 24
-MAX_VIDEO_SIZE_GB = 10
+GOOGLE_CLOUD_PROJECT_ID = ""
+CLOUDINARY_CLOUD_NAME = ""
+CLOUDINARY_API_KEY = ""
+REPLICATE_API_TOKEN = ""
+JOB_RETENTION_HOURS = "24"
+MAX_VIDEO_SIZE_GB = "10"
+ENABLE_AI_UPSCALE = "false"

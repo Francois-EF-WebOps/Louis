@@ -7,7 +7,7 @@ import { nanoid } from 'nanoid'
 import { handleUpload } from './handlers/upload.js'
 import { handleJobSubmit } from './handlers/jobs.js'
 import { handleJobStatus } from './handlers/status.js'
-import { handleCors } from './middleware/cors.js'
+import { handleCors, addCorsHeaders } from './middleware/cors.js'
 
 const MAX_REQUEST_SIZE = 100 * 1024 * 1024 // 100MB limit for uploads
 
@@ -77,32 +77,75 @@ async function handleDownload(jobId, env, ctx) {
     const jobData = await env.JOB_STATE.get(jobKey, 'json')
 
     if (!jobData) {
-      return new Response(JSON.stringify({ error: 'Job not found' }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' }
-      })
+      return addCorsHeaders(
+        new Response(JSON.stringify({ error: 'Job not found' }), {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      )
     }
 
     if (jobData.status !== 'completed') {
-      return new Response(JSON.stringify({ error: 'Job not completed' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      })
+      return addCorsHeaders(
+        new Response(JSON.stringify({ error: 'Job not completed yet', status: jobData.status }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      )
     }
 
-    // Generate signed URL for R2 download
-    const fileKey = `${jobId}/output.zip`
-    // Implementation depends on R2 bucket setup
-    // This is a placeholder
+    // Get the output file from R2
+    const outputKey = jobData.packageInfo?.outputKey || `${jobId}/output.zip`
+    
+    try {
+      const file = await env.VIDEO_BUCKET.get(outputKey)
+      
+      if (!file) {
+        return addCorsHeaders(
+          new Response(JSON.stringify({ error: 'Download file not found' }), {
+            status: 404,
+            headers: { 'Content-Type': 'application/json' }
+          })
+        )
+      }
 
-    return new Response(JSON.stringify({ downloadUrl: `/api/download/${jobId}/output.zip` }), {
-      headers: { 'Content-Type': 'application/json' }
-    })
+      // Return the file with appropriate headers
+      const headers = {
+        'Content-Type': file.httpMetadata?.contentType || 'application/zip',
+        'Content-Disposition': `attachment; filename="louis-${jobId}-output.zip"`,
+        'Cache-Control': 'private, max-age=3600'
+      }
+
+      return addCorsHeaders(
+        new Response(file.body, { headers })
+      )
+    } catch (r2Error) {
+      console.error('R2 download error:', r2Error)
+      
+      // If R2 is not configured, return job data with download info
+      return addCorsHeaders(
+        new Response(JSON.stringify({
+          downloadReady: true,
+          jobId,
+          message: 'R2 not configured - download implementation requires Cloudflare R2 setup',
+          jobData: {
+            workflow: jobData.workflow,
+            segments: jobData.chunks?.segments || [],
+            packageInfo: jobData.packageInfo
+          }
+        }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      )
+    }
   } catch (error) {
     console.error('Download handler error:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    })
+    return addCorsHeaders(
+      new Response(JSON.stringify({ error: error.message }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    )
   }
 }
