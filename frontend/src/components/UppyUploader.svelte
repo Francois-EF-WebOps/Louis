@@ -3,8 +3,8 @@
   import Uppy from '@uppy/core'
   import XHRUpload from '@uppy/xhr-upload'
   import StatusBar from '@uppy/status-bar'
-  import '@uppy/core/dist/style.css'
-  import '@uppy/status-bar/dist/style.css'
+  import '@uppy/core/dist/style.min.css'
+  import '@uppy/status-bar/dist/style.min.css'
 
   let container
   let uppy
@@ -13,7 +13,6 @@
     const maxSize = (parseInt(import.meta.env.VITE_MAX_UPLOAD_SIZE_GB || '5')) * 1024 * 1024 * 1024
 
     uppy = new Uppy({
-      id: 'louis-uploader',
       autoProceed: false,
       allowMultipleUploads: false,
       restrictions: {

@@ -10,11 +10,7 @@
   },
   "dependencies": {
     "svelte": "^4.2.0",
-    "uppy": "^3.14.0",
-    "@uppy/core": "^3.8.0",
-    "@uppy/xhr-upload": "^3.6.0",
-    "@uppy/status-bar": "^3.6.0",
-    "@uppy/progress-bar": "^3.4.0",
+    "uppy": "^3.28.0",
     "pako": "^2.1.0"
   },
   "devDependencies": {

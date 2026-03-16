@@ -93,25 +93,46 @@ export async function handleJobSubmit(request, env, ctx) {
 
 /**
  * Estimate processing cost based on file size and workflow
+ * Uses actual video duration estimation based on typical bitrates
  */
 function calculateCostEstimate(fileSizeBytes, workflow) {
+  // Estimate video duration from file size
+  // Average bitrate assumptions:
+  // - 1080p: ~5 Mbps = ~2.25 GB/hour
+  // - 720p: ~2.5 Mbps = ~1.1 GB/hour
+  // - 480p: ~1 Mbps = ~0.45 GB/hour
+  // Using conservative estimate: 2 GB/hour average
+  
   const fileSizeGb = fileSizeBytes / (1024 * 1024 * 1024)
-  const fileMinutes = fileSizeGb * 60 * 2 // Rough estimate: 2 min per GB
-
-  let cost = 0.01 // Base cost
-
-  // Google Video Intelligence: ~$0.00075 per minute for analysis
+  const estimatedMinutes = fileSizeGb * 30 // ~30 min per GB
+  
+  let cost = 0
+  
+  // Base processing cost (storage, bandwidth)
+  cost += 0.01
+  
+  // Google Video Intelligence: $0.00075 per minute
+  // Free tier: 1,000 minutes/month
   if (workflow.removeSilence) {
-    cost += fileMinutes * 0.00075
+    const analysisCost = estimatedMinutes * 0.00075
+    cost += analysisCost
   }
-
-  // Cloudinary: Free tier usually covers transformations
-  cost += 0.01 // Small overhead
-
-  // Replicate upscale: ~$0.027 per minute
+  
+  // Cloudinary transformations: Free tier covers most use cases
+  // Paid: ~$0.0001 per transformation
+  cost += 0.005 // Small overhead for transformations
+  
+  // Replicate AI Upscaling: ~$0.027 per minute for 720p
+  // This is the most expensive feature
   if (workflow.enableUpscale) {
-    cost += fileMinutes * 0.027
+    const upscaleCost = estimatedMinutes * 0.027
+    cost += upscaleCost
   }
-
-  return parseFloat(cost.toFixed(2))
+  
+  // Storage cost (R2): $0.015 per GB per month
+  // We store for 24 hours max, so prorated
+  const storageCost = fileSizeGb * 0.015 / 30
+  cost += storageCost
+  
+  return parseFloat(cost.toFixed(3))
 }
